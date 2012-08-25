@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> testing the Binary Data </title>
+	<script type="text/javascript" src="binaryData.js"></script>
+</head>
+<body style="background-color:silver;">
+<canvas id="testCanvas" width="512px" height="512px" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
+<script>
+
+	var canvas=document.getElementById("testCanvas");
+	var ctx=canvas.getContext("2d");
+	ctx.mozImageSmoothingEnabled=false;
+
+	var tileSize=20;
+	var screenSizeHalf=256;  
+	
+	var player={x:5,y:5}
+	
+	var looping=0;
+	
+	requestAnimFrame = (function(){
+          return  window.requestAnimationFrame       || 
+                  window.webkitRequestAnimationFrame || 
+                  window.mozRequestAnimationFrame    || 
+                  window.oRequestAnimationFrame      || 
+                  window.msRequestAnimationFrame     || 
+                  function(/* function */ callback, /* DOMElement */ element){
+                    window.setTimeout(callback, 1000 / 60);
+                  };
+    })();
+	
+
+	
+	var map=new binaryData.Grid(100,15,8,false) //create a 100x15 grid that uses 8bit unsigned(false means unsigned) ints
+	var map2=new binaryData.Grid(100,15,8,false);
+	
+	map.paste(0,0,[ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]])
+					
+
+	var mapping={   0 : function(){ ctx.save();
+									ctx.fillStyle="white";
+									ctx.fillRect(0,0,tileSize,tileSize);
+									ctx.restore()
+								  },
+								  
+								  
+								  
+					1 : function(){ ctx.save();
+									ctx.fillStyle="black";
+									ctx.fillRect(0,0,tileSize,tileSize);
+									ctx.restore()
+								  }
+								  
+	};
+				
+	
+		
+					
+	
+	function drawTiles() {
+		ctx.save();
+			ctx.translate(player.x,player.y);
+			map.forEach(function(value,x,y){
+				ctx.save();
+					ctx.translate(x*tileSize,y*tileSize);
+					mapping[value]();
+				ctx.restore();
+			});
+		ctx.restore();
+		
+		requestAnimFrame(drawTiles);
+	} 
+	
+	drawTiles();
+
+</script>
+</body>
+</html>
