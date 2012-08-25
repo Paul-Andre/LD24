@@ -15,7 +15,22 @@
 	var tileSize=23;
 	var screenSizeHalf=256;  
 	
-	var player={x:5,y:5}
+	
+	var player={x:5,
+				y:5,
+				speed:1,
+				update:function(keys){
+					if(keys.left)this.x-=this.speed;
+					if(keys.right)this.x+=this.speed;
+					if(keys.up)this.y-=this.speed;	
+					if(keys.down)this.y+=this.speed;			
+				}
+	}
+	
+	
+	
+	var keys={up:false,down:false,left:false,right:false}
+	
 	
 	var looping=0;
 	
@@ -68,10 +83,20 @@
 	};
 				
 	
+
+	ctx.clearScreen=function(){
+		this.save();
+			this.setTransform(1,0,0,1,0,0);
+			this.clearRect(0,0,this.canvas.width,this.canvas.height);
+		this.restore();
 		
+	}
 					
 	
 	function drawTiles() {
+	
+		player.update(keys);
+		ctx.clearScreen();
 		ctx.save();
 			ctx.translate(player.x,player.y);
 			map.forEach(function(value,x,y){
@@ -84,6 +109,30 @@
 		
 		requestAnimFrame(drawTiles);
 	} 
+	
+	
+	function doKeyDown(evt){
+		if (evt.keyCode == 37 || evt.keyCode == 65) {keys.left=true;}
+		if (evt.keyCode == 39 || evt.keyCode == 68) {keys.right=true;}
+		if (evt.keyCode == 38 || evt.keyCode == 87) {keys.up=true;}
+		if (evt.keyCode == 40 || evt.keyCode == 83) {keys.down=true;}
+	
+	}
+	
+	function doKeyUp(evt){
+		if (evt.keyCode == 37 || evt.keyCode == 65) {keys.left=false;}
+		if (evt.keyCode == 39 || evt.keyCode == 68) {keys.right=false;}
+		if (evt.keyCode == 38 || evt.keyCode == 87) {keys.up=false;}
+		if (evt.keyCode == 40 || evt.keyCode == 83) {keys.down=false;}
+	}
+	
+	
+	
+	window.addEventListener('keydown',doKeyDown,false);
+	window.addEventListener('keyup',doKeyUp,false);
+	
+	
+	
 	
 	drawTiles();
 
