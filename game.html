@@ -3,29 +3,27 @@
 <head>
 	<title> testing the Binary Data </title>
 	<script type="text/javascript" src="binaryData.js"></script>
+	<script type="text/javascript" src="pixastic.custom.js"></script>
 </head>
 <body style="background-color:silver;">
-<canvas id="testCanvas" width="512px" height="512px" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
+<header></header>
+<div>
+<canvas id="testCanvas" width="640px" height="480px" style="display: block;   margin-left: auto;   margin-right: auto;" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
+</div>
 <script>
 
 	var canvas=document.getElementById("testCanvas");
 	var ctx=canvas.getContext("2d");
 	ctx.mozImageSmoothingEnabled=false;
+	//ctx.scale(0.9,0.9);
+	ctx.translate(canvas.width/2,canvas.height/2);
+	var tileSize=32;
+	var screenWidth=canvas.width; 
+	var screenWidthHalf=canvas.width/2;  
+	var screenHeight=canvas.height; 
+	var screenHeightHalf=canvas.height/2;
+	
 
-	var tileSize=23;
-	var screenSizeHalf=256;  
-	
-	
-	var player={x:5,
-				y:5,
-				speed:1,
-				update:function(keys){
-					if(keys.left)this.x-=this.speed;
-					if(keys.right)this.x+=this.speed;
-					if(keys.up)this.y-=this.speed;	
-					if(keys.down)this.y+=this.speed;			
-				}
-	}
 	
 	
 	
@@ -45,70 +43,427 @@
                   };
     })();
 	
-
 	
-	var map=new binaryData.Grid(100,15,8,false) //create a 100x15 grid that uses 8bit unsigned(false means unsigned) ints
+	if (!Object.create) {
+		Object.create = function (o) {
+		    if (arguments.length > 1) {
+		        throw new Error('Object.create implementation only accepts the first parameter.');
+		    }
+		    function F() {}
+		    F.prototype = o;
+		    return new F();
+		};
+	}
+	
+	
+	var pictures={};
+	pictures.sombrero=new Image();
+	pictures.sombrero.src="sombrero.png";
+	
+	pictures.floorTile=new Image();
+	pictures.floorTile.src="floorTile.png";
+	
+	pictures.wallSomething=new Image();
+	pictures.wallSomething.src="wallSomething.png";
+	
+	pictures.fly1=new Image();
+	pictures.fly1.src="fly1.png";
+	
+	pictures.flyHues=[];
+	
+	pictures.fly1.onload=function(){
+	for(var i=0;i<36;i++){
+		var pic=Pixastic.process(pictures.fly1,"hsl", {hue:i*10-180,saturation:0,lightness:0});
+		pictures.flyHues.push(pic);
+	}
+	}
+	
+		
+	var everything=[];
+	everything.draw=function(){
+		for(var i=0;i<this.length;i++){
+			this[i].draw();
+			
+			
+		}
+	
+	}
+	
+	var creatures=[];
+	creatures.update=function(){
+		for(var i=0;i<this.length;i++){
+			this[i].update();
+			
+			
+		}
+	
+	}
+	
+
+	//constructor
+	function livingThing(x,y){
+		everything.push(this);
+		this.x=x;
+		this.y=y;
+		this.w=21;
+		this.h=21;
+		this.r=22;
+		
+	}
+	
+	
+	
+	function getFromMap(x,y,map){
+
+		if (x>=0&&y>=0&&x<map.width&&y<map.height){return map.get(x,y);}
+		return null;
+	}
+	
+	
+	livingThing.prototype.move=function(movX,movY){
+	
+		var nextX=this.x+movX;
+		var nextY=this.y+movY;
+		var colliding={ up:false,
+						down:false,
+						left:false,
+						right:false
+					  }
+				
+		var cornersX={
+						upperLeft  : mapping[getFromMap( Math.floor( (nextX-this.w*0.5)/tileSize), Math.floor( (this.y-this.h*0.5)/tileSize),map)].collide,
+						upperRight : mapping[getFromMap( Math.floor( (nextX+this.w*0.5)/tileSize), Math.floor( (this.y-this.h*0.5)/tileSize),map)].collide,
+						lowerLeft  : mapping[getFromMap( Math.floor( (nextX-this.w*0.5)/tileSize), Math.floor( (this.y+this.h*0.5)/tileSize),map)].collide,
+						lowerRight : mapping[getFromMap( Math.floor( (nextX+this.w*0.5)/tileSize), Math.floor(( this.y+this.h*0.5)/tileSize),map)].collide
+					}
+					
+		var cornersY={
+						upperLeft  : mapping[getFromMap( Math.floor( (this.x-this.w*0.5)/tileSize), Math.floor( (nextY-this.h*0.5)/tileSize),map)].collide,
+						upperRight : mapping[getFromMap( Math.floor( (this.x+this.w*0.5)/tileSize), Math.floor( (nextY-this.h*0.5)/tileSize),map)].collide,
+						lowerLeft  : mapping[getFromMap( Math.floor( (this.x-this.w*0.5)/tileSize), Math.floor( (nextY+this.h*0.5)/tileSize),map)].collide,
+						lowerRight : mapping[getFromMap( Math.floor( (this.x+this.w*0.5)/tileSize), Math.floor(( nextY+this.h*0.5)/tileSize),map)].collide
+					}
+					
+		var xSign=movX > 0 ? 1 : movX < 0 ? -1 : 0;
+		var ySign=movY > 0 ? 1 : movY < 0 ? -1 : 0;
+		
+		
+		//console.log(corners)
+		/*
+		if (xSign==-1 && ! (cornersX.upperLeft ||cornersX.lowerLeft )){;colliding.left=false}
+		if (xSign==1  && ! (cornersX.upperRight||cornersX.lowerRight)){this.x+=movX;colliding.right=false}
+		
+		if (ySign==-1 && ! (cornersY.upperLeft ||cornersY.upperRight)){this.y+=movY;colliding.up=false}
+		if (ySign==1  && ! (cornersY.lowerLeft ||cornersY.lowerRight)){this.y+=movY;colliding.down=false}
+		
+		if(cornersX.upperLeft ||cornersX.lowerLeft ){colliding.left=true;}
+		else if (xSign==-1)this.x+=movX;
+		
+		if(cornersX.upperRight ||cornersX.lowerLeft ){colliding.left=true;}
+		else if (xSign==-1)this.x+=movX;*/
+		
+		
+		if (xSign==-1){
+			if (cornersX.upperLeft ||cornersX.lowerLeft )colliding.left=true;
+			else this.x+=movX;
+		}
+		
+		if (xSign==1){
+			if (cornersX.upperRight||cornersX.lowerRight)colliding.right=true;
+			else this.x+=movX;
+		}
+		
+		if (ySign==-1){
+			if (cornersY.upperLeft ||cornersY.upperRight)colliding.up=true;
+			else this.y+=movY;
+		}
+		
+		if (ySign==1){
+			if (cornersY.lowerLeft ||cornersY.lowerRight)colliding.down=true;
+			else this.y+=movY;
+		}
+		
+		
+		
+		return colliding;
+		
+		//this.x+=movX;
+		//this.y+=movY;
+	}
+	
+	livingThing.prototype.draw=function(){
+			ctx.save();
+				ctx.fillStyle="red";
+				ctx.fillRect((this.x-this.w*0.5),(this.y-this.h*0.5),this.w,this.h);
+			ctx.restore();
+	}
+
+	animal.prototype=Object.create(livingThing.prototype); 
+	
+	function animal(x,y){		
+	
+		everything.push(this);
+		creatures.push(this);
+		this.x=x;
+		this.y=y;
+		this.w=20;
+		this.h=20;
+		this.r=22;
+		this.colorR=240;
+		this.colorG=43;
+		this.colorB=232;
+		this.speed=1.5;
+		this.vX=-2;
+		this.vY=2;
+		this.randomTurn=0.1;
+		this.randomWobble=2;
+		this.paramInfo={speed:{max:5,mutation:0.05,min:0},
+		
+					colorR:{max:255,mutation:1,min:0,integer:true},
+					colorG:{max:255,mutation:1,min:0,integer:true},
+					colorB:{max:255,mutation:1,min:0,integer:true},
+					
+					randomTurn:{max:0.5,mutation:0.05,min:-0.5}
+					}
+		
+	}
+	
+	animal.prototype.setup = function(){this.color="rgb("+this.colorR+","+this.colorG+","+this.colorB+")"
+		
+		
+		
+	}
+	
+	animal.prototype.draw = function(){
+			ctx.save();
+				//ctx.fillStyle="rgb("+this.color.r+","+this.color.g+","+this.color.b+")";
+				ctx.fillRect((this.x-this.w*0.5),(this.y-this.h*0.5),this.w,this.h);
+			ctx.restore();
+	}
+	
+	animal.prototype.update=function(){
+		var colliding=this.move(this.vX,this.vY);
+		
+		
+		if (colliding.up) this.vY=this.speed;
+		if (colliding.down) this.vY=-this.speed;
+		if (colliding.left) this.vX=this.speed;
+		if (colliding.right) this.vX=-this.speed;
+		
+		
+		this.vY+=Math.random()*this.randomWobble*2-this.randomWobble;
+		this.vX+=Math.random()*this.randomWobble*2-this.randomWobble;
+	
+	}
+	
+	Fly.prototype=Object.create(animal.prototype);
+	
+	function Fly(x,y){		
+	
+		everything.push(this);
+		creatures.push(this);
+		this.x=x;
+		this.y=y;
+		this.w=20;
+		this.h=20;
+		this.r=22;
+		this.colorR=240;
+		this.colorG=43;
+		this.colorB=232;
+		this.speed=1;
+		this.vX=-2;
+		this.vY=2;
+		this.randomTurn=0.1;
+		this.randomWobble=1;
+		this.paramInfo={speed:{max:5,mutation:0.05,min:0},
+		
+					colorR:{max:255,mutation:1,min:0,integer:true},
+					colorG:{max:255,mutation:1,min:0,integer:true},
+					colorB:{max:255,mutation:1,min:0,integer:true},
+					
+					randomTurn:{max:0.5,mutation:0.05,min:-0.5}
+					}
+		
+	}
+	
+	Fly.prototype.draw=function(){
+		ctx.save();
+			ctx.drawImage(pictures.fly1,(this.x-14),(this.y-14));
+		ctx.restore();
+	}
+	
+	
+	function Item(x,y){
+	
+	
+	
+	}
+	
+	
+	function bullet(){
+	
+	
+	
+	}
+	
+	
+	var map=new binaryData.Grid(20,20,8,false)
+	
 	var map2=new binaryData.Grid(100,15,8,false);
 	
-	map.paste(0,0,[ [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	map.paste(0,0,[ [0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]])
+					[1,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0]])
 					
 
-	var mapping={   0 : function(){ ctx.save();
-									ctx.fillStyle="white";
-									ctx.fillRect(0,0,tileSize,tileSize);
-									ctx.restore()
-								  },
+	var mapping={   0 : {
+							collide:false,
+							
+							draw : function(){ ctx.save();
+										ctx.fillStyle="white";
+										ctx.drawImage(pictures.floorTile,0,0);
+										//ctx.fillRect(0,0,tileSize,tileSize);
+										ctx.restore()
+								  	}
+						},
 								  
 								  
 								  
-					1 : function(){ ctx.save();
-									ctx.fillStyle="black";
-									ctx.fillRect(0,0,tileSize,tileSize);
-									ctx.restore()
-								  }
+					1 : {
+							collide:true,
+							
+							draw : function(){ ctx.save();
+										ctx.fillStyle="black";
+										ctx.fillRect(0,0,tileSize,tileSize);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					2 : {
+							collide:true,
+							
+							draw : function(){ ctx.save();
+										ctx.fillStyle="rgb(150,150,150)";
+										ctx.drawImage(pictures.wallSomething,0,0);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					3 : {
+							collide:false,
+							
+							draw : function(){ ctx.save();
+										ctx.fillStyle="rgb(150,150,150)";
+										ctx.fillRect(0,0,tileSize,tileSize);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					null:{
+							collide:true,
+							
+							draw : function(){ ctx.save();
+										ctx.fillStyle="black";
+										ctx.fillRect(0,0,tileSize,tileSize);
+										ctx.restore()
+									  }
+									  
+						}
 								  
 	};
-				
 	
+				
+				
+		////////////////////////////////////////////////////// player player player		
+		
+	var player=new livingThing(120,120)
+	
+	player.speed=2;
+	player.w=24;
+	player.h=24;
+	player.update=function(keys){
+		var move={x:0,y:0};
+					if(keys.left)move.x-=this.speed
+					if(keys.right)move.x+=this.speed;
+					if(keys.up)move.y-=this.speed;	
+					if(keys.down)move.y+=this.speed;
+			
+					
+		(move.x||move.y)&&this.move(move.x,move.y);
+	}
+
+	player.draw=function(){ctx.save();
+							
+							ctx.drawImage(pictures.sombrero,this.x-14,this.y-14);
+							ctx.restore()
+
+		}
 
 	ctx.clearScreen=function(){
 		this.save();
 			this.setTransform(1,0,0,1,0,0);
 			this.clearRect(0,0,this.canvas.width,this.canvas.height);
 		this.restore();
-		
 	}
-					
+	
+	ctx.fillScreen=function(){
+		this.save();
+			this.setTransform(1,0,0,1,0,0);
+			this.fillRect(0,0,this.canvas.width,this.canvas.height);
+		this.restore();
+	}			
 	
 	function drawTiles() {
 	
-		player.update(keys);
-		ctx.clearScreen();
+		map.forEach(function(value,x,y){
+			ctx.save();
+				ctx.translate(x*tileSize,y*tileSize);
+				mapping[value].draw(map2.get(x,y));
+			ctx.restore();
+		},(player.x-screenWidthHalf)/tileSize,(player.y-screenHeightHalf)/tileSize,screenWidth/tileSize,screenHeight/tileSize);
+
+		
+	} 
+	
+	function drawAll() {
+		//updateAll();
+		ctx.fillScreen();
 		ctx.save();
-			ctx.translate(player.x,player.y);
-			map.forEach(function(value,x,y){
-				ctx.save();
-					ctx.translate(x*tileSize,y*tileSize);
-					mapping[value]();
-				ctx.restore();
-			});
+		
+			ctx.translate(-player.x,-player.y);
+			drawTiles();
+			everything.draw();
+			
 		ctx.restore();
 		
-		requestAnimFrame(drawTiles);
-	} 
+		requestAnimFrame(drawAll);
+	}
+	
+	
+	function updateAll(){
+		
+		player.update(keys);
+		creatures.update();
+		
+	}
+	
+	
+	for (var i=0;i<100;i++)
+	new Fly(100,100);
 	
 	
 	function doKeyDown(evt){
@@ -131,10 +486,10 @@
 	window.addEventListener('keydown',doKeyDown,false);
 	window.addEventListener('keyup',doKeyUp,false);
 	
+	window.setInterval(updateAll,10);
 	
 	
-	
-	drawTiles();
+	drawAll();
 
 </script>
 </body>
