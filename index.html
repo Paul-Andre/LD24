@@ -1,22 +1,25 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-	<title> testing the Binary Data </title>
+	<title> FLy Pinatas </title>
 	<script type="text/javascript" src="binaryData.js"></script>
 	<script type="text/javascript" src="pixastic.custom.js"></script>
 </head>
 <body style="background-color:silver;">
 <header></header>
 <div>
-<canvas id="testCanvas" width="640px" height="480px" style="display: block;   margin-left: auto;   margin-right: auto;" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
+<canvas id="testCanvas" width="640px" height="480px" style="display: block;   margin-left: auto;   margin-right: auto;  position: relative;" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
 </div>
+<audio id="music" >
+
+  <source src="music.mp3" type="audio/mpeg" />
+  <source src="music.ogg" type="audio/ogg" /></audio>
 <script>
 
 	var canvas=document.getElementById("testCanvas");
 	var ctx=canvas.getContext("2d");
-	ctx.mozImageSmoothingEnabled=false;
-	//ctx.scale(0.9,0.9);
-	ctx.translate(canvas.width/2,canvas.height/2);
+
 	var tileSize=32;
 	var screenWidth=canvas.width; 
 	var screenWidthHalf=canvas.width/2;  
@@ -43,6 +46,7 @@
                   };
     })();
 	
+
 	
 	if (!Object.create) {
 		Object.create = function (o) {
@@ -54,9 +58,38 @@
 		    return new F();
 		};
 	}
+	ctx.fillStyle="#104645";
+	var pictures={};	
+	var loader={
+					load:{},
+					total:0,
+					done:0,
+					add:function(name,value){this.load[name]=value;this.total+=value;},
+					remove:function(name){this.done+=this.load[name];this.check()},
+					check:function(){
+											this.total==this.done   &&   init();
+											ctx.fillRect(100,screenHeight/2-25,(screenWidth-100)*this.done/this.total,50);
+											},
+					loadPicture:function(name,path,value){
+											this.add("pic-"+name,value);
+											pictures[name]=new Image();
+											pictures[name].onload=function(){
+												loader.remove("pic-"+name)
+											}
+											pictures[name].src=path;
+					},
+					loadPictureAndDo:function(name,path,value,func){
+											this.add("pic-"+name,value);
+											pictures[name]=new Image();
+											pictures[name].onload=function(){
+												loader.remove("pic-"+name);
+												func();
+											}
+											pictures[name].src=path;
+					}
+				}
 	
-	
-	var pictures={};
+/*
 	pictures.sombrero=new Image();
 	pictures.sombrero.src="sombrero.png";
 	
@@ -76,12 +109,56 @@
 		var pic=Pixastic.process(pictures.fly1,"hsl", {hue:i*10-180,saturation:0,lightness:0});
 		pictures.flyHues.push(pic);
 	}
+	init();
 	}
+	*/
 	
-		
+	loader.loadPicture("sombrero","sombrero.png",1);
+	loader.loadPicture("floorTile","floorTile.png",1);	
+	loader.loadPicture("wallSomething","wallSomething.png",1);
+	loader.loadPicture("labShelves","labShelves.png",1);
+	loader.loadPicture("labCounter1","labCounter1.png",1);
+	loader.loadPicture("labShelvesEmpty","labShelvesEmpty.png",1);
+	loader.loadPicture("banana","banana.png",1);
+//	loader.loadPicture("crystal","crystal.png",1);	
+	loader.add("flyHues",1);
+	pictures.flyHues=[];
+	loader.loadPictureAndDo("fly1","fly1.png",1,function(){
+		for(var i=0;i<36;i++){
+			var pic=Pixastic.process(pictures.fly1,"hsl", {hue:i*10-180,saturation:0,lightness:0});
+			pictures.flyHues.push(pic);
+		}
+		loader.remove("flyHues");
+	});
+	
+	loader.add("crystalTones",1);
+	pictures.crystalTones=[];
+	loader.loadPictureAndDo("crystal","crystal.png",1,function(){
+		for(var i=0;i<10;i++){
+			var pic=Pixastic.process(pictures.crystal,"hsl", {hue:0,saturation:-100+i*10,lightness:0});
+			pictures.crystalTones.push(pic);
+		}
+		loader.remove("crystalTones");
+	});	
+	
+	loader.add("candyHues",1);	
+	pictures.candyHues=[];
+	loader.loadPictureAndDo("candy","candy.png",1,function(){
+		for(var i=0;i<36;i++){
+			var pic=Pixastic.process(pictures.candy,"hsl", {hue:i*10-180,saturation:0,lightness:0});
+			pictures.candyHues.push(pic);
+		}
+		loader.remove("candyHues");
+	});		
+			
+			
 	var everything=[];
 	everything.draw=function(){
 		for(var i=0;i<this.length;i++){
+		
+			if(this[i].x>player.x-screenWidthHalf-16&&this[i].x<player.x+screenWidthHalf+16 &&
+				this[i].y>player.y-screenHeightHalf-16&&this[i].y<player.y+screenHeightHalf+16)
+			//player.x-screenWidthHalf),(player.y-screenHeightHalf)/tileSize,screenWidth/tileSize,screenHeight/tileSize)
 			this[i].draw();
 			
 			
@@ -99,6 +176,36 @@
 	
 	}
 	
+	var items=[];
+	items.update=function(){
+		for(var i=0;i<this.length;i++){
+		
+			var item=items[i];
+			
+			
+			item.update&&item.update();
+			
+			for( var j=0;j<creatures.length;j++){
+			
+				var creature=creatures[j];
+				
+				if (item.collide&&item.x>creature.x-creature.w*0.5&&item.x<creature.x+creature.w*0.5&&item.y>creature.y-creature.h*0.5&&item.y<creature.y+creature.h*0.5){
+					item.collide(creature);
+				}
+				
+			}
+			
+			if (item.collidePlayer&&item.x>player.x-player.w*0.5&&item.x<player.x+player.w*0.5&&item.y>player.y-player.h*0.5&&item.y<player.y+player.h*0.5) item.collidePlayer(player);
+		}
+	
+	}
+	
+	function cleanArray(a){
+		for(var i=0;i<a.length;i++){
+			if (a[i].dead){a.splice(i,1);i--;}
+		}
+	
+	}
 
 	//constructor
 	function livingThing(x,y){
@@ -217,22 +324,14 @@
 		this.vY=2;
 		this.randomTurn=0.1;
 		this.randomWobble=2;
-		this.paramInfo={speed:{max:5,mutation:0.05,min:0},
-		
-					colorR:{max:255,mutation:1,min:0,integer:true},
-					colorG:{max:255,mutation:1,min:0,integer:true},
-					colorB:{max:255,mutation:1,min:0,integer:true},
-					
-					randomTurn:{max:0.5,mutation:0.05,min:-0.5}
-					}
+
 		
 	}
 	
-	animal.prototype.setup = function(){this.color="rgb("+this.colorR+","+this.colorG+","+this.colorB+")"
 		
 		
 		
-	}
+	
 	
 	animal.prototype.draw = function(){
 			ctx.save();
@@ -270,42 +369,171 @@
 		this.colorR=240;
 		this.colorG=43;
 		this.colorB=232;
-		this.speed=1;
+		this.speed=0.2;
 		this.vX=-2;
 		this.vY=2;
 		this.randomTurn=0.1;
-		this.randomWobble=1;
-		this.paramInfo={speed:{max:5,mutation:0.05,min:0},
-		
-					colorR:{max:255,mutation:1,min:0,integer:true},
-					colorG:{max:255,mutation:1,min:0,integer:true},
-					colorB:{max:255,mutation:1,min:0,integer:true},
-					
-					randomTurn:{max:0.5,mutation:0.05,min:-0.5}
-					}
+		this.randomWobble=0.2;
+		this.hue=1;
+		this.candies=[];
 		
 	}
 	
 	Fly.prototype.draw=function(){
 		ctx.save();
-			ctx.drawImage(pictures.fly1,(this.x-14),(this.y-14));
+		try{
+			ctx.drawImage(pictures.flyHues[this.hue],(this.x-14),(this.y-14));
+			}
+			catch(err){console.log(this.hue)}
 		ctx.restore();
 	}
 	
 	
+	Fly.prototype.paramInfo={speed:{max:2,mutation:0.2,min:0},
+		
+					hue:{max:35,mutation:3,min:0,integer:true,loop:true},
+					
+					randomWobble:{max:2,mutation:0.2,min:-2}
+					}
+					
+	Fly.prototype.reproduce=function(){
+		var fly=new Fly(this.x,this.y);
+		for(var name in this.paramInfo){
+			var info=this.paramInfo[name];
+			
+			var tmax=info.max-info.min;
+			
+			fly[name]=info.loop?(info.integer? ( ( ( ( Math.round(this[name]+info.mutation*(Math.random()*2-1)) -info.min )%tmax)+tmax)%tmax)+info.min:
+										( ( ( ( this[name]+info.mutation*(Math.random()*2-1) -info.min )%tmax)+tmax)%tmax)+info.min):
+			
+						(info.integer?Math.max(Math.min(Math.round(this[name]+info.mutation*(Math.random()*2-1)),info.max),info.min):
+										Math.max(Math.min(this[name]+info.mutation*(Math.random()*2-1),info.max),info.min));
+		
+		}
+		fly.vX=(Math.random()*2-1)*fly.speed;
+		fly.vY=(Math.random()*2-1)*fly.speed;	
+	}
+	
+	Fly.prototype.die=function(){
+	
+		if(!this.dead)new Candy(this.x,this.y,this.hue);
+		this.dead=true;
+	}
+	
 	function Item(x,y){
+		this.x=x;
+		this.y=y;
+		everything.unshift(this);
+		items.push(this);
+		
+		
+	}
+	
+	//Item.prototype.collide=function(creature){}
+	//Item.prototype.collidePlayer=function(player){}
+	Item.prototype.draw=function(){}
 	
 	
+	Banana.prototype=Object.create(Item.prototype);
+	
+	function Banana(x,y){
+		this.x=x;
+		this.y=y;
+		everything.unshift(this);
+		items.push(this);
+		
+		
+		
+	}
+	
+	Banana.prototype.collidePlayer=function(player){player.speed++;this.dead=true;}
+	
+	
+	Banana.prototype.draw=function(){
+		ctx.save();
+			ctx.drawImage(pictures.banana,this.x-10,this.y-10);
+		ctx.restore();
 	
 	}
 	
 	
-	function bullet(){
+	Crystal.prototype=Object.create(Item.prototype);
 	
-	
+	function Crystal(x,y){
+		this.x=x;
+		this.y=y;
+		this.tone=9;
+		everything.unshift(this);
+		items.push(this);	
 	
 	}
 	
+	Crystal.prototype.draw=function(){
+		ctx.save();
+			ctx.drawImage(pictures.crystalTones[this.tone],this.x-10,this.y-10);
+		ctx.restore();
+		
+	}
+	Crystal.prototype.collide=function(thing){
+		this.tone--;
+		if(this.tone<0)this.dead=true; else thing.reproduce();
+	}
+	
+	Smack.prototype=Object.create(Item.prototype)
+	
+	function Smack(x,y){
+		this.x=x;
+		this.y=y;
+		this.time=5;
+		everything.push(this);
+		items.push(this);	
+	}
+	Smack.prototype.collide=function(thing){
+		thing.die();
+		//new Candy
+	}
+	
+	Smack.prototype.draw=function(){
+		ctx.save();
+		 ctx.fillRect(this.x-this.time*0.5,this.y-this.time*0.5,this.time,this.time);
+		ctx.restore();
+		
+	}
+	Smack.prototype.update=function(){
+		this.time--;
+		if (this.time<0){this.dead=true};
+	}
+	
+	
+	//function Bullet(){}
+	
+	Candy.prototype=Object.create(Item.prototype)	
+	
+	function Candy(x,y,hue){
+		this.x=x;
+		this.y=y;
+		this.hue=hue;
+		everything.unshift(this);
+		items.push(this);
+		
+	}
+	Candy.prototype.draw=function(){
+		ctx.save();
+			ctx.drawImage(pictures.candyHues[this.hue],this.x-10,this.y-10);
+		ctx.restore();
+		
+	}
+	Candy.prototype.collidePlayer=function(player){
+		//player.bat.length+=0.1;
+		//player.bat.smackTimes=Math.round(player.bat.length/5);
+		this.dead=true; ///////dddddddddddddddddddddddddsddddddddddddddddddddddddddddddddddddddd
+	
+	}
+	
+	Candy.prototype.collide=function(thing){
+		
+		
+	}
 	
 	var map=new binaryData.Grid(20,20,8,false)
 	
@@ -316,13 +544,13 @@
 					[0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
 					[0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0],
-					[0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0],
+					[0,0,0,0,0,0,0,1,1,1,0,0,1,5,0,0],
+					[0,0,0,0,0,0,0,1,0,0,0,0,4,6,0,0],
+					[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
 					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-					[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-					[1,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+					[0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+					[1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
 					[1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
 					[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0]])
 					
@@ -331,7 +559,7 @@
 							collide:false,
 							
 							draw : function(){ ctx.save();
-										ctx.fillStyle="white";
+										//ctx.fillStyle="white";
 										ctx.drawImage(pictures.floorTile,0,0);
 										//ctx.fillRect(0,0,tileSize,tileSize);
 										ctx.restore()
@@ -344,7 +572,7 @@
 							collide:true,
 							
 							draw : function(){ ctx.save();
-										ctx.fillStyle="black";
+										ctx.fillStyle="#00756b";
 										ctx.fillRect(0,0,tileSize,tileSize);
 										ctx.restore()
 									  }
@@ -355,19 +583,52 @@
 							collide:true,
 							
 							draw : function(){ ctx.save();
-										ctx.fillStyle="rgb(150,150,150)";
+										//ctx.fillStyle="rgb(150,150,150)";
 										ctx.drawImage(pictures.wallSomething,0,0);
 										ctx.restore()
 									  }
 									  
 						},
 						
+											
 					3 : {
 							collide:false,
 							
 							draw : function(){ ctx.save();
 										ctx.fillStyle="rgb(150,150,150)";
 										ctx.fillRect(0,0,tileSize,tileSize);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					4 : {
+							collide:true,
+							draw : function(){ ctx.save();
+										//ctx.fillStyle="rgb(150,150,150)";
+										ctx.drawImage(pictures.labShelves,0,0);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					5 : {
+							collide:true,
+							
+							draw : function(){ ctx.save();
+										//ctx.fillStyle="rgb(150,150,150)";
+										ctx.drawImage(pictures.labCounter1,0,0);
+										ctx.restore()
+									  }
+									  
+						},
+						
+					6 : {
+							collide:true,
+							
+							draw : function(){ ctx.save();
+										//ctx.fillStyle="rgb(150,150,150)";
+										ctx.drawImage(pictures.labShelvesEmpty,0,0);
 										ctx.restore()
 									  }
 									  
@@ -390,12 +651,19 @@
 				
 		////////////////////////////////////////////////////// player player player		
 		
-	var player=new livingThing(120,120)
+	var player=new livingThing(399,244)
 	
-	player.speed=2;
+	player.speed=3;
 	player.w=24;
 	player.h=24;
-	player.update=function(keys){
+	player.hitting=0;
+	player.smacks=[];
+	player.rotation=0;
+	player.hitSpeed=20;
+
+	player.bat={x:10,rotation:0,length:25,maxX:10,minX:-5,maxRot:Math.PI/3,smackTimes:5}
+	
+	player.update=function(keys,rotation){
 		var move={x:0,y:0};
 					if(keys.left)move.x-=this.speed
 					if(keys.right)move.x+=this.speed;
@@ -404,14 +672,42 @@
 			
 					
 		(move.x||move.y)&&this.move(move.x,move.y);
+		
+		if(this.hitting>0){this.hitting--;
+			var bat=this.bat;
+			bat.x=(bat.maxX-bat.minX)*Math.sin(this.hitting/this.hitSpeed*Math.PI)+bat.minX;
+			bat.rotation=(bat.maxRot)*Math.sin(this.hitting/this.hitSpeed*Math.PI*2);
+		
+			var startX=this.x+Math.cos(this.rotation)*bat.x;
+			var startY=this.y+Math.sin(this.rotation)*bat.x;
+				new Smack(startX,startY);
+			for (var i=0;i<bat.smackTimes;i++){
+				new Smack(startX+Math.cos(bat.rotation+this.rotation)*bat.length*(i+1)/bat.smackTimes,startY+Math.sin(bat.rotation+this.rotation)*bat.length*(i+1)/bat.smackTimes);
+			
+			}
+		}		
 	}
 
-	player.draw=function(){ctx.save();
-							
-							ctx.drawImage(pictures.sombrero,this.x-14,this.y-14);
+	player.draw=function(){
+							ctx.save();
+								ctx.translate(this.x,this.y);
+								ctx.drawImage(pictures.sombrero,-14,-14);
+								ctx.rotate(this.rotation);
+								
+								ctx.beginPath();
+								ctx.moveTo(this.bat.x,0);
+								ctx.lineTo(this.bat.x+Math.cos(this.bat.rotation)*this.bat.length,Math.sin(this.bat.rotation)*this.bat.length);
+								ctx.stroke();
 							ctx.restore()
 
 		}
+		
+	player.shoot=function(){
+	
+		this.hitting=this.hitSpeed;
+		//this.bat.rotation=Math.PI/6;
+		
+	}
 
 	ctx.clearScreen=function(){
 		this.save();
@@ -441,6 +737,7 @@
 	
 	function drawAll() {
 		//updateAll();
+		//ctx.fillStyle="#00756b";
 		ctx.fillScreen();
 		ctx.save();
 		
@@ -458,14 +755,89 @@
 		
 		player.update(keys);
 		creatures.update();
-		
+		items.update();
+		cleanArray(everything);
+		cleanArray(creatures);		
+		cleanArray(items);		
 	}
 	
 	
-	for (var i=0;i<100;i++)
-	new Fly(100,100);
+	for (var i=0;i<5;i++){
+	var f=	new Fly(100,100);
+	f.hue=Math.floor(Math.random()*5+15);
+	}
+	
+	new Banana(100,300);
+	
+	new Candy(150,350,6);
+	new Crystal(600,600);
+	new Crystal(580,600);
+	new Crystal(600,580);
+	new Crystal(580,580);	
+	new Crystal(560,600);	
+	new Crystal(600,560);	
+	new Crystal(560,560);	
+	new Crystal(560,580);	
+	new Crystal(580,560);	
+	
+	new Crystal(44,402);	
+	new Crystal(240,242);	
+	new Crystal(272,242);	
+	new Crystal(272+32,242-32);	
+	new Crystal(272,242-32);
 	
 	
+	new Crystal(240,242+96);	
+	new Crystal(272,242+96);	
+	new Crystal(272+32,242-32+96);	
+	new Crystal(272,242-32+96);
+	
+	new Crystal(628,28);	
+	new Crystal(628-32,28+32);
+	new Crystal(628-32,28);
+	new Crystal(628,28+32);
+	
+	new Crystal(12,462);
+	new Crystal(12+32,462);	
+	new Crystal(12,462+32);	
+	new Crystal(12+32,462+32);	
+	
+
+	
+	new Crystal(210,403);
+	
+	new Crystal(16,338);
+	
+	new Crystal(16,16);
+	
+	new Crystal(16+6*32,16);
+	
+	function doMouseDown(evt) {
+
+			
+			player.shoot();
+			
+
+	}
+	
+	function doMouseMove(evt) {
+
+		var x, y;
+		
+			if(evt.offsetX) {
+				x = evt.offsetX-screenWidthHalf;
+				y = evt.offsetY-screenHeightHalf;
+			}
+			else if(evt.layerX) {
+				x = evt.layerX-screenWidthHalf;
+				y = evt.layerY-screenHeightHalf;
+			}
+			
+			player.rotation=(Math.atan2(y,x));
+			
+
+	}
+		
 	function doKeyDown(evt){
 		if (evt.keyCode == 37 || evt.keyCode == 65) {keys.left=true;}
 		if (evt.keyCode == 39 || evt.keyCode == 68) {keys.right=true;}
@@ -482,15 +854,20 @@
 	}
 	
 	
+	function init(){
+		ctx.mozImageSmoothingEnabled=false;
+		//ctx.scale(0.9,0.9);
+		ctx.translate(canvas.width/2,canvas.height/2);
+		window.addEventListener('keydown',doKeyDown,false);
+		window.addEventListener('keyup',doKeyUp,false);
 	
-	window.addEventListener('keydown',doKeyDown,false);
-	window.addEventListener('keyup',doKeyUp,false);
-	
-	window.setInterval(updateAll,10);
-	
-	
-	drawAll();
-
+		window.setInterval(updateAll,10);
+		canvas.addEventListener('mousedown',doMouseDown,false);
+		canvas.addEventListener('mousemove',doMouseMove,false);
+			
+		drawAll();
+	}
 </script>
 </body>
 </html>
+
