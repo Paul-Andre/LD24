@@ -5,16 +5,14 @@
 	<title> FLy Pinatas </title>
 	<script type="text/javascript" src="binaryData.js"></script>
 	<script type="text/javascript" src="pixastic.custom.js"></script>
+
 </head>
 <body style="background-color:silver;">
 <header></header>
 <div>
 <canvas id="testCanvas" width="640px" height="480px" style="display: block;   margin-left: auto;   margin-right: auto;  position: relative;" > Oops, looks like you don't have canvas support. Oh sorry. </canvas>
 </div>
-<audio id="music" >
 
-  <source src="music.mp3" type="audio/mpeg" />
-  <source src="music.ogg" type="audio/ogg" /></audio>
 <script>
 
 	var canvas=document.getElementById("testCanvas");
@@ -151,6 +149,24 @@
 		loader.remove("candyHues");
 	});		
 			
+			
+	
+	// Here it seemed that I used some library for playing the music that is no longer hosted, so I disable this for now.
+	/*
+
+	loader.add("music",3);
+
+	 createjs.Sound.addEventListener("fileload", loadHandler);
+// createjs.Sound.registerSound("LD24looped.mp3|LD24looped.ogg", "sound");
+ function loadHandler(event) {
+     // This is fired for each sound that is registered.
+     var instance = createjs.Sound.play("sound");  // play using id.  Could also use full sourcepath or event.src.
+     instance.addEventListener("complete", loadHandler);
+     instance.setVolume(0.5);
+     
+     loader.remove("music");
+ }
+ */
 			
 	var everything=[];
 	everything.draw=function(){
